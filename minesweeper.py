@@ -35,22 +35,24 @@ class ResultFrame(Frame):
     def __init__(self, master_w:MainFrame):
         super().__init__(master = master_w)
         self.master_w = master_w
+        self.mines = []
         self.previous_grid = 0
+        
 
     def  ch_button(self,col,row):
-        btn = [i for i in self.master_w.result_frame.grid_slaves(column=col, row=row) if isinstance(i,Button)][0]
+        btn = [i for i in self.grid_slaves(column=col, row=row) if isinstance(i,Button)][0]
         btn.grid_forget()
 
         if [lbl for lbl in self.grid_slaves(row=row,column=col) if isinstance(lbl,Label) and lbl.cget("text") == "   "]: self.blank_zone(col,row)
 
-        if [lbl for lbl in self.master_w.result_frame.grid_slaves(row=row,column=col) if lbl.cget("text") == "\U0001F4A3"]:
+        if [lbl for lbl in self.grid_slaves(row=row,column=col) if lbl.cget("text") == "\U0001F4A3"]:
                 self.master_w.controls_frame.gm_over.grid(row=2,column=0,columnspan=3,sticky=NSEW)
-                [mines.configure(bg="red") for mines in self.master_w.result_frame.grid_slaves() if isinstance(mines, Label) and mines.cget("text") == "\U0001F4A3"]
+                [mines.configure(bg="red") for mines in self.grid_slaves() if isinstance(mines, Label) and mines.cget("text") == "\U0001F4A3"]
                 [btn.grid_forget() for btn in self.grid_slaves() if isinstance(btn, Button)]
         
-        if len([i for i in self.master_w.result_frame.grid_slaves() if isinstance(i,Button)]) == len([lbl for lbl in self.master_w.result_frame.grid_slaves() if lbl.cget("text") == "\U0001F4A3"]):
+        if len([i for i in self.grid_slaves() if isinstance(i,Button)]) == len([lbl for lbl in self.grid_slaves() if lbl.cget("text") == "\U0001F4A3"]):
             self.master_w.controls_frame.win.grid(row=2,column=0,columnspan=3,sticky=NSEW)
-            [mines.configure(bg="green") for mines in self.master_w.result_frame.grid_slaves() if isinstance(mines, Label) and mines.cget("text") == "\U0001F4A3"]
+            [mines.configure(bg="green") for mines in self.grid_slaves() if isinstance(mines, Label) and mines.cget("text") == "\U0001F4A3"]
             [btn.grid_forget() for btn in self.grid_slaves() if isinstance(btn, Button)]
 
     def blank_zone(self,col,row):
@@ -73,12 +75,13 @@ class ResultFrame(Frame):
 
 
     def draw_cells(self):
+        self.mines =[]
         self.master_w.controls_frame.gm_over.grid_forget()
         self.master_w.controls_frame.win.grid_forget()
-        [i.grid_forget() for i in self.master_w.result_frame.grid_slaves()]
+        [i.grid_forget() for i in self.grid_slaves()]
         for i in range(self.previous_grid):
-            self.master_w.result_frame.columnconfigure(i, weight=0)
-            self.master_w.result_frame.rowconfigure(i, weight=0)
+            self.columnconfigure(i, weight=0)
+            self.rowconfigure(i, weight=0)
         
         # Get cells number
         cells_n = int(self.master_w.controls_frame.cells_number_entry.get())
@@ -87,43 +90,46 @@ class ResultFrame(Frame):
         
         # Draw
         for i in range(cells_n):
-            self.master_w.result_frame.columnconfigure(i, weight=1)
-            self.master_w.result_frame.rowconfigure(i, weight=1)
+            self.columnconfigure(i, weight=1)
+            self.rowconfigure(i, weight=1)
 
             for j in range(cells_n):
-                lbl = Label(self.master_w.result_frame,text="   ")
+                lbl = Label(self,text="   ")
                 lbl.grid(column=i, row=j, sticky=(N,S,W,E), padx=5.5, pady=5.5)
 
-                btn = Button(self.master_w.result_frame, text = "   ", command=lambda col=i, row=j: self.ch_button(col,row))
+                btn = Button(self, text = "   ", command=lambda col=i, row=j: self.ch_button(col,row))
                 btn.grid(column=i, row=j, sticky=(N,S,W,E), padx=3, pady=3)
         
         
-        labels = [i for i in self.master_w.result_frame.grid_slaves() if isinstance(i,Label)]
-        mines = []
+        labels = [i for i in self.grid_slaves() if isinstance(i,Label)]
 
         for m in range(mine_n):
             ind = random.randint(0,len(labels)-1)
             labels[ind].config(text = "\U0001F4A3")
-            mines.append(labels[ind])
+            self.mines.append(labels[ind])
             labels.remove(labels[ind])
 
 
-        for m in mines:
+        for m in self.mines:
             m:Label
             col = m.grid_info()["column"]
             row = m.grid_info()["row"]
-            for l in labels:
-                if l.grid_info()["column"] == col and l.grid_info()["row"] == row + 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == col and l.grid_info()["row"] == row - 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == col - 1 and l.grid_info()["row"] == row: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == col + 1 and l.grid_info()["row"] == row: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == col + 1 and l.grid_info()["row"] == row + 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == col - 1 and l.grid_info()["row"] == row - 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == col - 1 and l.grid_info()["row"] == row + 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == col + 1 and l.grid_info()["row"] == row - 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
 
+            for r in range(row-1,row+2):
+                for c in range(col-1,col+2):
+                    if c == col and r == row:continue
+                    try:
+                        lbl = [i for i in self.grid_slaves(row=r,column=c) if isinstance(i,Label)][0]
+                        lbl.configure(text = f"{1 if lbl.cget("text") =="   " else int(lbl.cget("text"))+1}")
+                    except:pass
 
 
 
 main_window = MainFrame()
 main_window.mainloop()
+
+
+
+
+
+
