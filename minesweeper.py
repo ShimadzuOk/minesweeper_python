@@ -36,8 +36,9 @@ class ResultFrame(Frame):
         super().__init__(master = master_w)
         self.master_w = master_w
         self.mines = []
+        self.btns = []
         self.previous_grid = 0
-        
+
 
     def  ch_button(self,col,row):
         btn = [i for i in self.grid_slaves(column=col, row=row) if isinstance(i,Button)][0]
@@ -46,14 +47,14 @@ class ResultFrame(Frame):
         if [lbl for lbl in self.grid_slaves(row=row,column=col) if isinstance(lbl,Label) and lbl.cget("text") == "   "]: self.blank_zone(col,row)
 
         if [lbl for lbl in self.grid_slaves(row=row,column=col) if lbl.cget("text") == "\U0001F4A3"]:
-                self.master_w.controls_frame.gm_over.grid(row=2,column=0,columnspan=3,sticky=NSEW)
-                [mines.configure(bg="red") for mines in self.grid_slaves() if isinstance(mines, Label) and mines.cget("text") == "\U0001F4A3"]
-                [btn.grid_forget() for btn in self.grid_slaves() if isinstance(btn, Button)]
-        
-        if len([i for i in self.grid_slaves() if isinstance(i,Button)]) == len([lbl for lbl in self.grid_slaves() if lbl.cget("text") == "\U0001F4A3"]):
+            self.master_w.controls_frame.gm_over.grid(row=2,column=0,columnspan=3,sticky=NSEW)
+            [mines.configure(bg="red") for mines in self.mines]
+            [btn.grid_forget() for btn in self.btns]
+    
+        if len([i for i in self.grid_slaves() if isinstance(i,Button)]) == len(self.mines):
             self.master_w.controls_frame.win.grid(row=2,column=0,columnspan=3,sticky=NSEW)
-            [mines.configure(bg="green") for mines in self.grid_slaves() if isinstance(mines, Label) and mines.cget("text") == "\U0001F4A3"]
-            [btn.grid_forget() for btn in self.grid_slaves() if isinstance(btn, Button)]
+            [mines.configure(bg="green") for mines in self.mines]
+            [btn.grid_forget() for btn in self.btns]
 
     def blank_zone(self,col,row):
         area = []
@@ -70,12 +71,13 @@ class ResultFrame(Frame):
                 r = btn.grid_info()["row"]
                 c = btn.grid_info()["column"]
                 btn.grid_forget()
-                if self.grid_slaves(row=r,column=c)[0].cget("text") == "   ": self.blank_zone(c,r)
+                if [i for i in self.grid_slaves(row=r,column=c) if isinstance(i,Label)][0].cget("text") == "   ": self.blank_zone(c,r)
             except:pass
 
-
     def draw_cells(self):
+        # Reset
         self.mines =[]
+        self.btns = []
         self.master_w.controls_frame.gm_over.grid_forget()
         self.master_w.controls_frame.win.grid_forget()
         [i.grid_forget() for i in self.grid_slaves()]
@@ -100,15 +102,15 @@ class ResultFrame(Frame):
                 btn = Button(self, text = "   ", command=lambda col=i, row=j: self.ch_button(col,row))
                 btn.grid(column=i, row=j, sticky=(N,S,W,E), padx=3, pady=3)
         
-        
+        self.btns = [i for i in self.grid_slaves() if isinstance(i,Button)]
         labels = [i for i in self.grid_slaves() if isinstance(i,Label)]
 
         for m in range(mine_n):
-            ind = random.randint(0,len(labels)-1)
-            labels[ind].config(text = "\U0001F4A3")
-            self.mines.append(labels[ind])
-            labels.remove(labels[ind])
-
+            if labels:
+                ind = random.randint(0,len(labels)-1)
+                labels[ind].configure(text = "\U0001F4A3")
+                self.mines.append(labels[ind])
+                labels.remove(labels[ind])
 
         for m in self.mines:
             m:Label
@@ -123,13 +125,5 @@ class ResultFrame(Frame):
                         lbl.configure(text = f"{1 if lbl.cget("text") =="   " else int(lbl.cget("text"))+1}")
                     except:pass
 
-
-
 main_window = MainFrame()
 main_window.mainloop()
-
-
-
-
-
-
