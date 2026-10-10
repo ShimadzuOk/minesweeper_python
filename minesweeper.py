@@ -22,6 +22,7 @@ class ControlFrame(Frame):
         self.cells_number_entry = Entry(self)
         self.mine_number_entry = Entry(self)
         self.gm_over = Label(self,text="GAME OVER")
+        self.win = Label(self,text="YOU WIN!")
 
         self.mine_number_entry.grid(row=1,column=1,sticky=EW)
         self.cells_number_entry.grid(row=0,column=1,sticky=EW)
@@ -37,22 +38,43 @@ class ResultFrame(Frame):
         self.previous_grid = 0
 
     def  ch_button(self,col,row):
-        btn = [i for i in self.master_w.result_frame.grid_slaves(column=col, row=row) if isinstance(i,Button)]
-        btn[0].grid_forget()
+        btn = [i for i in self.master_w.result_frame.grid_slaves(column=col, row=row) if isinstance(i,Button)][0]
+        btn.grid_forget()
 
-        for lbl in [i for i in self.master_w.result_frame.grid_slaves() if isinstance(i,Label)]:
+        if [lbl for lbl in self.grid_slaves(row=row,column=col) if isinstance(lbl,Label) and lbl.cget("text") == "   "]: self.blank_zone(col,row)
 
-            if lbl.cget("text") == "\U0001F4A3" and lbl.grid_info()["column"] == col and lbl.grid_info()["row"] == row:
-
+        if [lbl for lbl in self.master_w.result_frame.grid_slaves(row=row,column=col) if lbl.cget("text") == "\U0001F4A3"]:
                 self.master_w.controls_frame.gm_over.grid(row=2,column=0,columnspan=3,sticky=NSEW)
-                
-                for lbl in self.master_w.result_frame.grid_slaves():
-                            if isinstance(lbl, Label) and lbl.cget("text") == "\U0001F4A3":
-                                lbl.lift()
+                [mines.configure(bg="red") for mines in self.master_w.result_frame.grid_slaves() if isinstance(mines, Label) and mines.cget("text") == "\U0001F4A3"]
+                [btn.grid_forget() for btn in self.grid_slaves() if isinstance(btn, Button)]
+        
+        if len([i for i in self.master_w.result_frame.grid_slaves() if isinstance(i,Button)]) == len([lbl for lbl in self.master_w.result_frame.grid_slaves() if lbl.cget("text") == "\U0001F4A3"]):
+            self.master_w.controls_frame.win.grid(row=2,column=0,columnspan=3,sticky=NSEW)
+            [mines.configure(bg="green") for mines in self.master_w.result_frame.grid_slaves() if isinstance(mines, Label) and mines.cget("text") == "\U0001F4A3"]
+            [btn.grid_forget() for btn in self.grid_slaves() if isinstance(btn, Button)]
+
+    def blank_zone(self,col,row):
+        area = []
+
+        for r in range(row-1,row+2):
+            for c in range(col-1,col+2):
+                if c == col and r == row:continue
+                try: area.append([btn for btn in self.grid_slaves(row=r,column=c) if isinstance(btn,Button)][0])
+                except:pass
+        
+        for btn in area:
+            btn:Button
+            try:
+                r = btn.grid_info()["row"]
+                c = btn.grid_info()["column"]
+                btn.grid_forget()
+                if self.grid_slaves(row=r,column=c)[0].cget("text") == "   ": self.blank_zone(c,r)
+            except:pass
 
 
     def draw_cells(self):
         self.master_w.controls_frame.gm_over.grid_forget()
+        self.master_w.controls_frame.win.grid_forget()
         [i.grid_forget() for i in self.master_w.result_frame.grid_slaves()]
         for i in range(self.previous_grid):
             self.master_w.result_frame.columnconfigure(i, weight=0)
@@ -74,13 +96,12 @@ class ResultFrame(Frame):
 
                 btn = Button(self.master_w.result_frame, text = "   ", command=lambda col=i, row=j: self.ch_button(col,row))
                 btn.grid(column=i, row=j, sticky=(N,S,W,E), padx=3, pady=3)
-                pass
         
         
         labels = [i for i in self.master_w.result_frame.grid_slaves() if isinstance(i,Label)]
         mines = []
 
-        for i in range(mine_n):
+        for m in range(mine_n):
             ind = random.randint(0,len(labels)-1)
             labels[ind].config(text = "\U0001F4A3")
             mines.append(labels[ind])
@@ -89,23 +110,20 @@ class ResultFrame(Frame):
 
         for m in mines:
             m:Label
-            column = m.grid_info()["column"]
+            col = m.grid_info()["column"]
             row = m.grid_info()["row"]
             for l in labels:
-                if l.grid_info()["column"] == column and l.grid_info()["row"] == row + 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == column and l.grid_info()["row"] == row - 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == column - 1 and l.grid_info()["row"] == row: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == column + 1 and l.grid_info()["row"] == row: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == column + 1 and l.grid_info()["row"] == row + 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == column - 1 and l.grid_info()["row"] == row - 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == column - 1 and l.grid_info()["row"] == row + 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
-                if l.grid_info()["column"] == column + 1 and l.grid_info()["row"] == row - 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
+                if l.grid_info()["column"] == col and l.grid_info()["row"] == row + 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
+                if l.grid_info()["column"] == col and l.grid_info()["row"] == row - 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
+                if l.grid_info()["column"] == col - 1 and l.grid_info()["row"] == row: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
+                if l.grid_info()["column"] == col + 1 and l.grid_info()["row"] == row: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
+                if l.grid_info()["column"] == col + 1 and l.grid_info()["row"] == row + 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
+                if l.grid_info()["column"] == col - 1 and l.grid_info()["row"] == row - 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
+                if l.grid_info()["column"] == col - 1 and l.grid_info()["row"] == row + 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
+                if l.grid_info()["column"] == col + 1 and l.grid_info()["row"] == row - 1: l.configure(text = f"{1 if l.cget("text") =="   " else int(l.cget("text"))+1}")
+
 
 
 
 main_window = MainFrame()
 main_window.mainloop()
-
-
-
-
