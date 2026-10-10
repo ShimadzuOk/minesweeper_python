@@ -6,10 +6,14 @@ previous_grid = 0
 def  ch_button(col,row):
     btn = result_frame.grid_slaves(column=col, row=row)[0]
     btn.grid_forget()
-    pass
+    for lbl in [i for i in result_frame.grid_slaves() if isinstance(i,Label)]:
+        if lbl.cget("text") == "\U0001F4A3" and lbl.grid_info()["column"] == col and lbl.grid_info()["row"] == row:
+            gm_over.grid(row=2,column=0,columnspan=3,sticky=NSEW)
+
 
 def draw_cells():
     global previous_grid
+    gm_over.grid_forget()
     [i.grid_forget() for i in result_frame.grid_slaves()]
     for i in range(previous_grid):
         result_frame.columnconfigure(i, weight=0)
@@ -77,6 +81,7 @@ Button(controls_frame, text="Draw cells", command=draw_cells).grid(row=0,column=
 Label(controls_frame, text="Mine number: ").grid(row=1,column=0,sticky=EW)
 mine_number_entry = Entry(controls_frame)
 mine_number_entry.grid(row=1,column=1,sticky=EW)
+gm_over = Label(controls_frame,text="GAME OVER")
 
 
 main_window.mainloop()
