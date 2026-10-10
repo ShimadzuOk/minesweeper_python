@@ -41,13 +41,11 @@ class ControlFrame(Frame):
         self.mine_number_entry.grid(row=1,column=1,columnspan=3 ,sticky=EW)
         self.action_btn.grid(row=0,column=4,rowspan=2,sticky=NSEW)
 
-    def timer(self):
-        self.current_timer_sec = 0
+    def timer(self) -> None:
+        self.current_timer_sec = -1
         self.current_timer_min = 0
         self.current_timer_hour = 0
         self.clock.set(f"{self.current_timer_hour}:{self.current_timer_min:02}:{self.current_timer_sec:02}")
-        time.sleep(1)
-        self.action_btn.config(state=NORMAL)
         self.timer_status = None
         while self.timer_status != "STOP":
             if self.current_timer_sec == 59: 
@@ -60,9 +58,6 @@ class ControlFrame(Frame):
             self.clock.set(f"{self.current_timer_hour}:{self.current_timer_min:02}:{self.current_timer_sec:02}")
             time.sleep(1)
 
-            
-
-
 class ResultFrame(Frame):
     def __init__(self, master_w:MainFrame):
         super().__init__(master = master_w)
@@ -72,14 +67,14 @@ class ResultFrame(Frame):
         self.mines = []
         self.previous_grid = []
 
-    def flag(self,event:Event):
+    def flag(self,event:Event) -> None:
         btn = event.widget
         if btn.cget("text") == "   ": btn.config(text="⚑",state=DISABLED)
         else: btn.config(text="   ",state=NORMAL)
         
-
-    def  ch_button(self,col,row):
+    def  ch_button(self,col,row) -> None:
         btn = [i for i in self.grid_slaves(column=col, row=row) if isinstance(i,Button)][0]
+        self.btns.remove(btn)
         btn.grid_forget()
 
         if [lbl for lbl in self.grid_slaves(row=row,column=col) if isinstance(lbl,Label) and lbl.cget("text") == "   "]: self.blank_zone(col,row)
@@ -87,27 +82,28 @@ class ResultFrame(Frame):
         if [lbl for lbl in self.grid_slaves(row=row,column=col) if lbl.cget("text") == "\U0001F4A3"]:
             self.master_w.controls_frame.timer_status = "STOP"
             self.master_w.controls_frame.gm_over.grid(row=3,column=0,columnspan=5,sticky=NSEW)
-            flaged = [fl for fl in self.grid_slaves() if fl.cget("text") == "⚑"]
-            flaged_mines =[[i for i in self.mines if i.grid_info()["row"] == flm.grid_info()["row"] and i.grid_info()["column"] == flm.grid_info()["column"]] for flm in flaged]
-            
-            # peredelat ochen ploho
-            [self.grid_slaves(row=blank.grid_info()["row"],column = blank.grid_info()["column"])[0].configure(bg="yellow") 
-             if isinstance(self.grid_slaves(row=blank.grid_info()["row"],column = blank.grid_info()["column"])[0],Label)
-             else self.grid_slaves(row=blank.grid_info()["row"],column = blank.grid_info()["column"])[1].configure(bg="yellow")
-             for blank in flaged 
-             if [blank] not in flaged_mines]
-            
-            [mine.configure(bg="red") if [mine] not in flaged_mines else mine.configure(bg="green") for mine in self.mines]
+            flaged = [(fl.grid_info()["row"],fl.grid_info()["column"]) for fl in self.grid_slaves() if fl.cget("text") == "⚑"]
+            flaged_mines = []
+            flaged_blank = flaged.copy()
+            [[(flaged_mines.append(m),flaged_blank.remove(flm)) 
+              for m in self.mines 
+              if (m.grid_info()["row"],m.grid_info()["column"]) == flm] 
+              for flm in flaged]
+            [[i.configure(bg="yellow") for i in self.labels 
+              if (i.grid_info()["row"],i.grid_info()["column"]) == flm] for flm in flaged_blank]
+            [mine.configure(bg="green") if mine in flaged_mines else mine.configure(bg="red") for mine in self.mines]
             [btn.grid_forget() for btn in self.btns]
             self.grid_slaves(column=col, row=row)[0].configure(text="\U0001F4A5",bg = "#ff6f00")
+            return None
     
-        if len([i for i in self.grid_slaves() if isinstance(i,Button)]) == len(self.mines):
+        if len(self.btns) == len(self.mines):
             self.master_w.controls_frame.timer_status = "STOP"
             self.master_w.controls_frame.win.grid(row=3,column=0,columnspan=5,sticky=NSEW)
             [mines.configure(bg="green") for mines in self.mines]
             [btn.grid_forget() for btn in self.btns]
+            return None
 
-    def blank_zone(self,col,row):
+    def blank_zone(self,col,row) -> None:
         area = []
 
         for r in range(row-1,row+2):
@@ -121,16 +117,16 @@ class ResultFrame(Frame):
             try:
                 r = btn.grid_info()["row"]
                 c = btn.grid_info()["column"]
+                self.btns.remove(btn)
                 btn.grid_forget()
                 if [i for i in self.grid_slaves(row=r,column=c) if isinstance(i,Label)][0].cget("text") == "   ": self.blank_zone(c,r)
             except:pass
 
-    def draw_cells(self):
+    def draw_cells(self) -> None:
         # Reset
         self.labels = []
         self.mines =[]
         self.btns = []
-        self.master_w.controls_frame.action_btn.config(state=DISABLED)
         self.master_w.controls_frame.timer_status = "STOP"
         self.master_w.controls_frame.gm_over.grid_forget()
         self.master_w.controls_frame.win.grid_forget()
@@ -184,6 +180,7 @@ class ResultFrame(Frame):
                     except:pass
 
         threading.Thread(target=self.master_w.controls_frame.timer,daemon=True).start()
+        self.master_w.after(500)
 
 
 main_window = MainFrame()
