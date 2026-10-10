@@ -30,7 +30,6 @@ class ControlFrame(Frame):
         self.lbl2.grid(row=1,column=0,sticky=EW)
         self.action_btn.grid(row=0,column=2,rowspan=2,sticky=NSEW)
 
-
 class ResultFrame(Frame):
     def __init__(self, master_w:MainFrame):
         super().__init__(master = master_w)
@@ -39,6 +38,11 @@ class ResultFrame(Frame):
         self.btns = []
         self.previous_grid = 0
 
+    def flag(self,event:Event):
+        btn = event.widget
+        if btn.cget("text") == "   ": btn.config(text="⚑",state=DISABLED)
+        else: btn.config(text="   ",state=NORMAL)
+        
 
     def  ch_button(self,col,row):
         btn = [i for i in self.grid_slaves(column=col, row=row) if isinstance(i,Button)][0]
@@ -62,7 +66,7 @@ class ResultFrame(Frame):
         for r in range(row-1,row+2):
             for c in range(col-1,col+2):
                 if c == col and r == row:continue
-                try: area.append([btn for btn in self.grid_slaves(row=r,column=c) if isinstance(btn,Button)][0])
+                try: area.append([btn for btn in self.grid_slaves(row=r,column=c) if isinstance(btn,Button) and btn.cget("text") != "⚑"][0])
                 except:pass
         
         for btn in area:
@@ -100,6 +104,7 @@ class ResultFrame(Frame):
                 lbl.grid(column=i, row=j, sticky=(N,S,W,E), padx=5.5, pady=5.5)
 
                 btn = Button(self, text = "   ", command=lambda col=i, row=j: self.ch_button(col,row))
+                btn.bind("<Button-3>",lambda event: self.flag(event))
                 btn.grid(column=i, row=j, sticky=(N,S,W,E), padx=3, pady=3)
         
         self.btns = [i for i in self.grid_slaves() if isinstance(i,Button)]
