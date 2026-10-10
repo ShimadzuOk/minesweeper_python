@@ -85,8 +85,12 @@ class ResultFrame(Frame):
         if [lbl for lbl in self.grid_slaves(row=row,column=col) if lbl.cget("text") == "\U0001F4A3"]:
             self.master_w.controls_frame.timer_status = "STOP"
             self.master_w.controls_frame.gm_over.grid(row=3,column=0,columnspan=5,sticky=NSEW)
-            [mines.configure(bg="red") for mines in self.mines]
+            flaged_mines =[[i for i in self.grid_slaves(row= flm.grid_info()["row"],column=flm.grid_info()["column"]) if i.cget("text") == "\U0001F4A3"][0]
+                            for flm in 
+                            [fl for fl in self.grid_slaves() if fl.cget("text") == "⚑"]]
+            [mines.configure(bg="red") if mines not in flaged_mines else mines.configure(bg="green") for mines in self.mines]
             [btn.grid_forget() for btn in self.btns]
+            self.grid_slaves(column=col, row=row)[0].configure(text="\U0001F4A5",bg = "#ff6f00")
     
         if len([i for i in self.grid_slaves() if isinstance(i,Button)]) == len(self.mines):
             self.master_w.controls_frame.timer_status = "STOP"
@@ -114,12 +118,11 @@ class ResultFrame(Frame):
 
     def draw_cells(self):
         # Reset
-        self.master_w.controls_frame.timer_status = "STOP"
         self.mines =[]
         self.btns = []
         self.master_w.controls_frame.gm_over.grid_forget()
         self.master_w.controls_frame.win.grid_forget()
-        [i.destroy() for i in self.grid_slaves()]
+        [i.grid_forget() for i in self.grid_slaves()]
         if self.previous_grid:
             for i in range(self.previous_grid[0]):
                 self.columnconfigure(i, weight=0)
@@ -160,7 +163,6 @@ class ResultFrame(Frame):
             m:Label
             col = m.grid_info()["column"]
             row = m.grid_info()["row"]
-
             for r in range(row-1,row+2):
                 for c in range(col-1,col+2):
                     if c == col and r == row:continue
@@ -169,7 +171,6 @@ class ResultFrame(Frame):
                         lbl.configure(text = f"{1 if lbl.cget("text") =="   " else int(lbl.cget("text"))+1}")
                     except:pass
 
-        self.master_w.controls_frame.timer_status = None
         threading.Thread(target=self.master_w.controls_frame.timer,daemon=True).start()
 
 
