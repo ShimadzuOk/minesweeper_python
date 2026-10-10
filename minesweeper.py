@@ -42,10 +42,12 @@ class ControlFrame(Frame):
         self.action_btn.grid(row=0,column=4,rowspan=2,sticky=NSEW)
 
     def timer(self) -> None:
-        self.current_timer_sec = -1
+        self.current_timer_sec = 0
         self.current_timer_min = 0
         self.current_timer_hour = 0
         self.clock.set(f"{self.current_timer_hour}:{self.current_timer_min:02}:{self.current_timer_sec:02}")
+        time.sleep(1)
+        self.action_btn.config(state=NORMAL)
         self.timer_status = None
         while self.timer_status != "STOP":
             if self.current_timer_sec == 59: 
@@ -127,6 +129,7 @@ class ResultFrame(Frame):
         self.labels = []
         self.mines =[]
         self.btns = []
+        self.master_w.controls_frame.action_btn.config(state=DISABLED)
         self.master_w.controls_frame.timer_status = "STOP"
         self.master_w.controls_frame.gm_over.grid_forget()
         self.master_w.controls_frame.win.grid_forget()
@@ -180,7 +183,6 @@ class ResultFrame(Frame):
                     except:pass
 
         threading.Thread(target=self.master_w.controls_frame.timer,daemon=True).start()
-        self.master_w.after(500)
 
 
 main_window = MainFrame()
