@@ -1,4 +1,4 @@
-import random
+import random,time,threading
 from tkinter import *
 
 
@@ -15,10 +15,16 @@ class ControlFrame(Frame):
     def __init__(self, master_w:MainFrame):
         super().__init__(master = master_w)
         self.master_w = master_w
+        self.timer_status = None
+        self.current_timer_sec = 0
+        self.current_timer_min = 0
+        self.current_timer_hour = 0
+        self.clock = StringVar(value="0:00:00")
 
         self.lbl1 = Label(self, text="Cells number: ")
         self.lblx = Label(self, text="x")
         self.lbl2 = Label(self, text="Mine number: ")
+        self.lbl_timer = Label(self, textvariable= self.clock)
         self.action_btn = Button(self, text="Draw cells", command= self.master_w.result_frame.draw_cells)
         self.cells_width_entry = Entry(self,width=3)
         self.cells_height_entry = Entry(self,width=3)
@@ -29,10 +35,32 @@ class ControlFrame(Frame):
         self.lbl1.grid(row=0,column=0,sticky=EW)
         self.lbl2.grid(row=1,column=0,sticky=EW)
         self.lblx.grid(row=0,column=2)
+        self.lbl_timer.grid(row=2,column=0,columnspan=5)
         self.cells_width_entry.grid(row=0,column=1,sticky=EW)
         self.cells_height_entry.grid(row=0,column=3,sticky=EW)
         self.mine_number_entry.grid(row=1,column=1,columnspan=3 ,sticky=EW)
         self.action_btn.grid(row=0,column=4,rowspan=2,sticky=NSEW)
+
+    def timer(self):
+        time.sleep(1)
+        self.current_timer_sec = 0
+        self.current_timer_min = 0
+        self.current_timer_hour = 0
+        while self.timer_status != "STOP":
+            if self.current_timer_sec == 59: 
+                self.current_timer_sec = 0
+                if self.current_timer_min == 59:
+                    self.current_timer_min = 0
+                    self.current_timer_hour += 1
+                else: self.current_timer_min += 1
+            else:self.current_timer_sec += 1
+            self.clock.set(f"{self.current_timer_hour}:{self.current_timer_min:02}:{self.current_timer_sec:02}")
+            time.sleep(1)
+        self.timer_status = None
+            
+
+
+
 
 class ResultFrame(Frame):
     def __init__(self, master_w:MainFrame):
@@ -55,12 +83,14 @@ class ResultFrame(Frame):
         if [lbl for lbl in self.grid_slaves(row=row,column=col) if isinstance(lbl,Label) and lbl.cget("text") == "   "]: self.blank_zone(col,row)
 
         if [lbl for lbl in self.grid_slaves(row=row,column=col) if lbl.cget("text") == "\U0001F4A3"]:
-            self.master_w.controls_frame.gm_over.grid(row=2,column=0,columnspan=5,sticky=NSEW)
+            self.master_w.controls_frame.timer_status = "STOP"
+            self.master_w.controls_frame.gm_over.grid(row=3,column=0,columnspan=5,sticky=NSEW)
             [mines.configure(bg="red") for mines in self.mines]
             [btn.grid_forget() for btn in self.btns]
     
         if len([i for i in self.grid_slaves() if isinstance(i,Button)]) == len(self.mines):
-            self.master_w.controls_frame.win.grid(row=2,column=0,columnspan=3,sticky=NSEW)
+            self.master_w.controls_frame.timer_status = "STOP"
+            self.master_w.controls_frame.win.grid(row=3,column=0,columnspan=5,sticky=NSEW)
             [mines.configure(bg="green") for mines in self.mines]
             [btn.grid_forget() for btn in self.btns]
 
@@ -84,11 +114,12 @@ class ResultFrame(Frame):
 
     def draw_cells(self):
         # Reset
+        self.master_w.controls_frame.timer_status = "STOP"
         self.mines =[]
         self.btns = []
         self.master_w.controls_frame.gm_over.grid_forget()
         self.master_w.controls_frame.win.grid_forget()
-        [i.grid_forget() for i in self.grid_slaves()]
+        [i.destroy() for i in self.grid_slaves()]
         if self.previous_grid:
             for i in range(self.previous_grid[0]):
                 self.columnconfigure(i, weight=0)
@@ -137,6 +168,10 @@ class ResultFrame(Frame):
                         lbl = [i for i in self.grid_slaves(row=r,column=c) if isinstance(i,Label)][0]
                         lbl.configure(text = f"{1 if lbl.cget("text") =="   " else int(lbl.cget("text"))+1}")
                     except:pass
+
+        self.master_w.controls_frame.timer_status = None
+        threading.Thread(target=self.master_w.controls_frame.timer,daemon=True).start()
+
 
 main_window = MainFrame()
 main_window.mainloop()
